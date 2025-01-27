@@ -1,7 +1,7 @@
 {
   "name": "hono-bun",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "dev": "bun run --hot src/routes/index.ts"
   },
   "dependencies": {
     "hono": "^4.6.19",
