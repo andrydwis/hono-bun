@@ -9,39 +9,92 @@ class PostController {
     `
 
     const data = {
-      status: 200,
-      data: posts,
+      posts: posts,
     }
 
-    return request.json({ data })
+    return request.json({ data }, 200)
   }
 
   async show(request: Context) {
     const { id } = request.req.param()
 
-    const post = await sql`
+    const posts = await sql`
       SELECT * FROM posts
       WHERE id = ${id}
+      LIMIT 1
     `
 
-    const data = {
-      status: 200,
-      data: post,
+    const post = posts[0]
+
+    if (!post) {
+      return request.notFound()
     }
 
-    return request.json({ data })
+    const data = {
+      post: post,
+    }
+
+    return request.json({ data }, 200)
   }
 
   async create(request: Context) {
-    return request.json({ status: 'create' })
+    type Post = {
+      title: string
+      slug?: string
+      content: string
+    }
+
+    const post = (await request.req.json()) as Post
+    post.slug = post.title.replace(/ /g, '-').toLowerCase()
+
+    const sqlPost = await sql`
+      INSERT INTO posts (title, content, slug, updated_at)
+      VALUES (${post.title}, ${post.content}, ${post.slug}, now())
+      RETURNING *
+    `
+
+    const data = {
+      post: sqlPost,
+    }
+
+    return request.json({ data }, 201)
   }
 
   async update(request: Context) {
-    return request.json({ status: 'update' })
+    type Post = {
+      title: string
+      slug?: string
+      content: string
+    }
+
+    const post = (await request.req.json()) as Post
+    post.slug = post.title.replace(/ /g, '-').toLowerCase()
+
+    const { id } = request.req.param()
+
+    const sqlPost = await sql`
+      UPDATE posts
+      SET title = ${post.title}, content = ${post.content}, slug = ${post.slug}, updated_at = now()
+      WHERE id = ${id}
+      RETURNING *
+    `
+
+    const data = {
+      post: sqlPost,
+    }
+
+    return request.json({ data }, 200)
   }
 
   async delete(request: Context) {
-    return request.json({ status: 'delete' })
+    const { id } = request.req.param()
+
+    await sql`
+      DELETE FROM posts
+      WHERE id = ${id}
+    `
+
+    return request.newResponse(null, 204)
   }
 }
 
